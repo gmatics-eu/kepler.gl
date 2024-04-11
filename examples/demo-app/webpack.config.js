@@ -1,5 +1,22 @@
-// SPDX-License-Identifier: MIT
-// Copyright contributors to the kepler.gl project
+// Copyright (c) 2023 Uber Technologies, Inc.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
 
 // NOTE: To use this example standalone (e.g. outside of deck.gl repo)
 // delete the local development overrides at the bottom of this file
@@ -8,9 +25,10 @@
 const resolve = require('path').resolve;
 const join = require('path').join;
 const webpack = require('webpack');
+const CopyPlugin = require("copy-webpack-plugin");
+const { title } = require('process');
 
-const WEBPACK_ENV_VARIABLES = require('../../webpack/shared-webpack-configuration')
-  .WEBPACK_ENV_VARIABLES;
+
 
 const CONFIG = {
   // bundle app.js and everything it imports, recursively.
@@ -37,12 +55,10 @@ const CONFIG = {
         include: [join(__dirname, 'src')],
         exclude: [/node_modules/]
       },
-      // fix for arrow-related errors
       {
-        test: /\.mjs$/,
-        include: /node_modules/,
-        type: 'javascript/auto'
-      }
+        test: /\.geojson$/,
+        use: 'json-loader',
+      },
     ]
   },
 
@@ -56,7 +72,22 @@ const CONFIG = {
   },
 
   // Optional: Enables reading mapbox and dropbox client token from environment variable
-  plugins: [new webpack.EnvironmentPlugin(WEBPACK_ENV_VARIABLES)]
+  plugins: [
+    new webpack.EnvironmentPlugin([
+      'MapboxAccessToken',
+      'DropboxClientId',
+      'MapboxExportToken',
+      'CartoClientId',
+      'ENTEL_SNAM_GASDOTTI_DIR_PATH',
+      'CLIENT_ID',
+      'AUTHORITY',
+      'SCOPE',
+      'AUDIENCE',
+    ]),
+    new CopyPlugin([
+      { from: "src/public", to: "public" }
+    ])
+  ]
 };
 
 // This line enables bundling against src in this repo rather than installed kepler.gl module

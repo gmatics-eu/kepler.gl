@@ -1,58 +1,95 @@
-// SPDX-License-Identifier: MIT
-// Copyright contributors to the kepler.gl project
+// Copyright (c) 2023 Uber Technologies, Inc.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
 
-import React, {Component} from 'react';
-import AutoSizer from 'react-virtualized/dist/commonjs/AutoSizer';
-import styled, {ThemeProvider} from 'styled-components';
-import window from 'global/window';
-import {connect} from 'react-redux';
+import React, { Component } from "react";
+import AutoSizer from "react-virtualized/dist/commonjs/AutoSizer";
+import styled, { ThemeProvider } from "styled-components";
+import window from "global/window";
+import { connect } from "react-redux";
 
-import {theme} from '@kepler.gl/styles';
-import Banner from './components/banner';
-import Announcement, {FormLink} from './components/announcement';
-import {replaceLoadDataModal} from './factories/load-data-modal';
-import {replaceMapControl} from './factories/map-control';
-import {replacePanelHeader} from './factories/panel-header';
-import {CLOUD_PROVIDERS_CONFIGURATION, DEFAULT_FEATURE_FLAGS} from './constants/default-settings';
-import {messages} from './constants/localization';
+import { theme } from "@kepler.gl/styles";
+import Banner from "./components/banner";
+import Announcement, { FormLink } from "./components/announcement";
+import { replaceLoadDataModal } from "./factories/load-data-modal";
+import { replaceMapControl } from "./factories/map-control";
+import { replacePanelHeader } from "./factories/panel-header";
+import {
+  AUTH_TOKENS,
+  DEFAULT_FEATURE_FLAGS,
+} from "./constants/default-settings";
+import { messages } from "./constants/localization";
 
 import {
   loadRemoteMap,
   loadSampleConfigurations,
   onExportFileSuccess,
-  onLoadCloudMapSuccess
-} from './actions';
+  onLoadCloudMapSuccess,
+} from "./actions";
 
-import {loadCloudMap, addDataToMap, addNotification, replaceDataInMap} from '@kepler.gl/actions';
-import {CLOUD_PROVIDERS} from './cloud-providers';
+import {
+  loadCloudMap,
+  addDataToMap,
+  addNotification,
+  replaceDataInMap,
+} from "@kepler.gl/actions";
+import { CLOUD_PROVIDERS } from "./cloud-providers";
 
-const KeplerGl = require('@kepler.gl/components').injectComponents([
+const KeplerGl = require("@kepler.gl/components").injectComponents([
   replaceLoadDataModal(),
   replaceMapControl(),
-  replacePanelHeader()
+  replacePanelHeader(),
 ]);
 
 // Sample data
 /* eslint-disable no-unused-vars */
-import sampleTripData, {testCsvData, sampleTripDataConfig} from './data/sample-trip-data';
-import sampleGeojson from './data/sample-small-geojson';
-import sampleGeojsonPoints from './data/sample-geojson-points';
-import sampleGeojsonConfig from './data/sample-geojson-config';
-import sampleH3Data, {config as h3MapConfig} from './data/sample-hex-id-csv';
-import sampleS2Data, {config as s2MapConfig, dataId as s2DataId} from './data/sample-s2-data';
-import sampleAnimateTrip, {animateTripDataId} from './data/sample-animate-trip-data';
-import sampleIconCsv, {config as savedMapConfig} from './data/sample-icon-csv';
-import sampleGpsData from './data/sample-gps-data';
+import sampleTripData, {
+  testCsvData,
+  sampleTripDataConfig,
+} from "./data/sample-trip-data";
+import sampleGeojson from "./data/sample-small-geojson";
+import sampleGeojsonPoints from "./data/sample-geojson-points";
+import sampleGeojsonConfig from "./data/sample-geojson-config";
+import sampleH3Data, { config as h3MapConfig } from "./data/sample-hex-id-csv";
+import sampleS2Data, {
+  config as s2MapConfig,
+  dataId as s2DataId,
+} from "./data/sample-s2-data";
+import sampleAnimateTrip, {
+  animateTripDataId,
+} from "./data/sample-animate-trip-data";
+import sampleIconCsv, {
+  config as savedMapConfig,
+} from "./data/sample-icon-csv";
+import sampleGpsData from "./data/sample-gps-data";
 
-import {processCsvData, processGeojson} from '@kepler.gl/processors';
+import { processCsvData, processGeojson } from "@kepler.gl/processors";
+import AuthWrapper from "./components/authWrapper";
+import  {KeplerContainer} from './keplerContainer'
 /* eslint-enable no-unused-vars */
 
 const BannerHeight = 48;
 const BannerKey = `banner-${FormLink}`;
-const keplerGlGetState = state => state.demo.keplerGl;
+const keplerGlGetState = (state) => state.demo.keplerGl;
 
 const GlobalStyle = styled.div`
-  font-family: ff-clan-web-pro, 'Helvetica Neue', Helvetica, sans-serif;
+  font-family: ff-clan-web-pro, "Helvetica Neue", Helvetica, sans-serif;
   font-weight: 400;
   font-size: 0.875em;
   line-height: 1.71429;
@@ -76,38 +113,30 @@ const GlobalStyle = styled.div`
 
   a {
     text-decoration: none;
-    color: ${props => props.theme.labelColor};
+    color: ${(props) => props.theme.labelColor};
   }
 `;
-
-const CONTAINER_STYLE = {
-  transition: 'margin 1s, height 1s',
-  position: 'absolute',
-  width: '100%',
-  height: '100%',
-  left: 0,
-  top: 0
-};
 
 class App extends Component {
   state = {
     showBanner: false,
     width: window.innerWidth,
-    height: window.innerHeight
+    height: window.innerHeight,
   };
 
   componentDidMount() {
     // if we pass an id as part of the url
     // we ry to fetch along map configurations
-    const {params: {id, provider} = {}, location: {query = {}} = {}} = this.props;
+    const { params: { id, provider } = {}, location: { query = {} } = {} } =
+      this.props;
 
-    const cloudProvider = CLOUD_PROVIDERS.find(c => c.name === provider);
+    const cloudProvider = CLOUD_PROVIDERS.find((c) => c.name === provider);
     if (cloudProvider) {
       this.props.dispatch(
         loadCloudMap({
           loadParams: query,
           provider: cloudProvider,
-          onSuccess: onLoadCloudMapSuccess
+          onSuccess: onLoadCloudMapSuccess,
         })
       );
       return;
@@ -121,7 +150,7 @@ class App extends Component {
     // Load map using a custom
     if (query.mapUrl) {
       // TODO?: validate map url
-      this.props.dispatch(loadRemoteMap({dataUrl: query.mapUrl}));
+      this.props.dispatch(loadRemoteMap({ dataUrl: query.mapUrl }));
     }
 
     // delay zs to show the banner
@@ -136,24 +165,24 @@ class App extends Component {
   }
 
   _showBanner = () => {
-    this.setState({showBanner: true});
+    this.setState({ showBanner: true });
   };
 
   _hideBanner = () => {
-    this.setState({showBanner: false});
+    this.setState({ showBanner: false });
   };
 
   _disableBanner = () => {
     this._hideBanner();
-    window.localStorage.setItem(BannerKey, 'true');
+    window.localStorage.setItem(BannerKey, "true");
   };
 
   _loadMockNotifications = () => {
     const notifications = [
-      [{message: 'Welcome to Kepler.gl'}, 3000],
-      [{message: 'Something is wrong', type: 'error'}, 1000],
-      [{message: 'I am getting better', type: 'warning'}, 1000],
-      [{message: 'Everything is fine', type: 'success'}, 1000]
+      [{ message: "Welcome to Kepler.gl" }, 3000],
+      [{ message: "Something is wrong", type: "error" }, 1000],
+      [{ message: "I am getting better", type: "warning" }, 1000],
+      [{ message: "Everything is fine", type: "success" }, 1000],
     ];
 
     this._addNotifications(notifications);
@@ -186,16 +215,16 @@ class App extends Component {
       addDataToMap({
         datasets: {
           info: {
-            label: 'Sample Taxi Trips in New York City',
-            id: 'test_trip_data'
+            label: "Sample Taxi Trips in New York City",
+            id: "test_trip_data",
           },
-          data: sampleTripData
+          data: sampleTripData,
         },
         options: {
           // centerMap: true,
-          keepExistingConfig: true
+          keepExistingConfig: true,
         },
-        config: sampleTripDataConfig
+        config: sampleTripDataConfig,
       })
     );
   }
@@ -205,31 +234,31 @@ class App extends Component {
       addDataToMap({
         datasets: {
           info: {
-            label: 'Sample Scenegraph Ducks',
-            id: 'test_trip_data'
+            label: "Sample Scenegraph Ducks",
+            id: "test_trip_data",
           },
-          data: processCsvData(testCsvData)
+          data: processCsvData(testCsvData),
         },
         config: {
-          version: 'v1',
+          version: "v1",
           config: {
             visState: {
               layers: [
                 {
-                  type: '3D',
+                  type: "3D",
                   config: {
-                    dataId: 'test_trip_data',
+                    dataId: "test_trip_data",
                     columns: {
-                      lat: 'gps_data.lat',
-                      lng: 'gps_data.lng'
+                      lat: "gps_data.lat",
+                      lng: "gps_data.lng",
                     },
-                    isVisible: true
-                  }
-                }
-              ]
-            }
-          }
-        }
+                    isVisible: true,
+                  },
+                },
+              ],
+            },
+          },
+        },
       })
     );
   }
@@ -241,12 +270,12 @@ class App extends Component {
         datasets: [
           {
             info: {
-              label: 'Icon Data',
-              id: 'test_icon_data'
+              label: "Icon Data",
+              id: "test_icon_data",
             },
-            data: processCsvData(sampleIconCsv)
-          }
-        ]
+            data: processCsvData(sampleIconCsv),
+          },
+        ],
       })
     );
   }
@@ -256,10 +285,10 @@ class App extends Component {
       addDataToMap({
         datasets: [
           {
-            info: {label: 'Trip animation', id: animateTripDataId},
-            data: processGeojson(sampleAnimateTrip)
-          }
-        ]
+            info: { label: "Trip animation", id: animateTripDataId },
+            data: processGeojson(sampleAnimateTrip),
+          },
+        ],
       })
     );
   }
@@ -267,18 +296,18 @@ class App extends Component {
   _replaceData = () => {
     // add geojson data
     const sliceData = processGeojson({
-      type: 'FeatureCollection',
-      features: sampleGeojsonPoints.features.slice(0, 5)
+      type: "FeatureCollection",
+      features: sampleGeojsonPoints.features.slice(0, 5),
     });
     this._loadGeojsonData();
     window.setTimeout(() => {
       this.props.dispatch(
         replaceDataInMap({
-          datasetToReplaceId: 'bart-stops-geo',
+          datasetToReplaceId: "bart-stops-geo",
           datasetToUse: {
-            info: {label: 'Bart Stops Geo Replaced', id: 'bart-stops-geo-2'},
-            data: sliceData
-          }
+            info: { label: "Bart Stops Geo Replaced", id: "bart-stops-geo-2" },
+            data: sliceData,
+          },
         })
       );
     }, 1000);
@@ -290,18 +319,18 @@ class App extends Component {
       addDataToMap({
         datasets: [
           {
-            info: {label: 'Bart Stops Geo', id: 'bart-stops-geo'},
-            data: processGeojson(sampleGeojsonPoints)
+            info: { label: "Bart Stops Geo", id: "bart-stops-geo" },
+            data: processGeojson(sampleGeojsonPoints),
           },
           {
-            info: {label: 'SF Zip Geo', id: 'sf-zip-geo'},
-            data: processGeojson(sampleGeojson)
-          }
+            info: { label: "SF Zip Geo", id: "sf-zip-geo" },
+            data: processGeojson(sampleGeojson),
+          },
         ],
         options: {
-          keepExistingConfig: true
+          keepExistingConfig: true,
         },
-        config: sampleGeojsonConfig
+        config: sampleGeojsonConfig,
       })
     );
   }
@@ -313,16 +342,16 @@ class App extends Component {
         datasets: [
           {
             info: {
-              label: 'H3 Hexagons V2',
-              id: 'h3-hex-id'
+              label: "H3 Hexagons V2",
+              id: "h3-hex-id",
             },
-            data: processCsvData(sampleH3Data)
-          }
+            data: processCsvData(sampleH3Data),
+          },
         ],
         config: h3MapConfig,
         options: {
-          keepExistingConfig: true
-        }
+          keepExistingConfig: true,
+        },
       })
     );
   }
@@ -334,16 +363,16 @@ class App extends Component {
         datasets: [
           {
             info: {
-              label: 'S2 Data',
-              id: s2DataId
+              label: "S2 Data",
+              id: s2DataId,
             },
-            data: processCsvData(sampleS2Data)
-          }
+            data: processCsvData(sampleS2Data),
+          },
         ],
         config: s2MapConfig,
         options: {
-          keepExistingConfig: true
-        }
+          keepExistingConfig: true,
+        },
       })
     );
   }
@@ -354,15 +383,15 @@ class App extends Component {
         datasets: [
           {
             info: {
-              label: 'Gps Data',
-              id: 'gps-data'
+              label: "Gps Data",
+              id: "gps-data",
             },
-            data: processCsvData(sampleGpsData)
-          }
+            data: processCsvData(sampleGpsData),
+          },
         ],
         options: {
-          keepExistingConfig: true
-        }
+          keepExistingConfig: true,
+        },
       })
     );
   }
@@ -370,7 +399,7 @@ class App extends Component {
     // TODO: this lives only in the demo hence we use the state for now
     // REFCOTOR using redux
     this.setState({
-      cloudModalOpen: !this.state.cloudModalOpen
+      cloudModalOpen: !this.state.cloudModalOpen,
     });
   };
 
@@ -380,23 +409,25 @@ class App extends Component {
       // https://reactjs.org/docs/refs-and-the-dom.html#callback-refs
       // console.log(`Map ${index} has closed`);
     } else {
-      // We expect an Map created by KeplerGl's MapContainer.
-      // https://visgl.github.io/react-map-gl/docs/api-reference/map
+      // We expect an InteractiveMap created by KeplerGl's MapContainer.
+      // https://uber.github.io/react-map-gl/#/Documentation/api-reference/interactive-map
       const map = mapbox.getMap();
-      map.on('zoomend', e => {
+      map.on("zoomend", (e) => {
         // console.log(`Map ${index} zoom level: ${e.target.style.z}`);
       });
     }
   };
 
   render() {
+
+
     return (
       <ThemeProvider theme={theme}>
         <GlobalStyle
           // this is to apply the same modal style as kepler.gl core
           // because styled-components doesn't always return a node
           // https://github.com/styled-components/styled-components/issues/617
-          ref={node => {
+          ref={(node) => {
             node ? (this.root = node) : null;
           }}
         >
@@ -408,24 +439,23 @@ class App extends Component {
           >
             <Announcement onDisable={this._disableBanner} />
           </Banner>
-          <div style={CONTAINER_STYLE}>
+          <div
+            style={{
+              transition: "margin 1s, height 1s",
+              position: "absolute",
+              width: "100%",
+              height: "100%",
+              left: 0,
+              top: 0,
+            }}
+          >
             <AutoSizer>
-              {({height, width}) => (
-                <KeplerGl
-                  mapboxApiAccessToken={CLOUD_PROVIDERS_CONFIGURATION.MAPBOX_TOKEN}
-                  id="map"
-                  /*
-                   * Specify path to keplerGl state, because it is not mount at the root
-                   */
-                  getState={keplerGlGetState}
-                  width={width}
-                  height={height}
-                  cloudProviders={CLOUD_PROVIDERS}
-                  localeMessages={messages}
-                  onExportToCloudSuccess={onExportFileSuccess}
-                  onLoadCloudMapSuccess={onLoadCloudMapSuccess}
-                  featureFlags={DEFAULT_FEATURE_FLAGS}
-                />
+              {({ height, width }) => (
+                <AuthWrapper>          
+                    <KeplerContainer  keplerGlGetState={keplerGlGetState} width={width} height={height} messages={messages}
+                    onExportFileSuccess={onExportFileSuccess}onLoadCloudMapSuccess={onLoadCloudMapSuccess}
+                    DEFAULT_FEATURE_FLAGS={DEFAULT_FEATURE_FLAGS}KeplerGl={KeplerGl}></KeplerContainer>
+                </AuthWrapper>
               )}
             </AutoSizer>
           </div>
@@ -435,7 +465,7 @@ class App extends Component {
   }
 }
 
-const mapStateToProps = state => state;
-const dispatchToProps = dispatch => ({dispatch});
+const mapStateToProps = (state) => state;
+const dispatchToProps = (dispatch) => ({ dispatch });
 
 export default connect(mapStateToProps, dispatchToProps)(App);
