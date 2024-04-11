@@ -1,3 +1,11 @@
+# Gmatics kepler.gl
+
+per adesso l'area di lavoro del progetto utilizzata è ``examples\demo-app\`` all'interno si trova tutto queelo di cui ha bisogno il progetto : **providers** da aggiungere all'occorenza ,**dockerfile** per la build, **package.json** per i moduli e un **README**
+
+<br/> <!-- Questo inserisce uno spazio vuoto --><br/> <!-- Questo inserisce uno spazio vuoto -->
+
+
+
 <p align="right">
   <a href="https://npmjs.org/package/kepler.gl">
     <img src="https://img.shields.io/npm/v/kepler.gl.svg?style=flat" alt="version" />
