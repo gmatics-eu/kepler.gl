@@ -1,6 +1,6 @@
 # Gmatics kepler.gl
 
-per adesso l'area di lavoro del progetto utilizzata è ``examples\demo-app\`` all'interno si trova tutto queelo di cui ha bisogno il progetto : **providers** da aggiungere all'occorenza ,**dockerfile** per la build, **package.json** per i moduli e un **README**
+per adesso l'area di lavoro del progetto utilizzata è ``examples\demo-app\`` all'interno si trova tutto quello di cui ha bisogno il progetto : **providers** da aggiungere all'occorenza ,**dockerfile** per la build, **package.json** per i moduli e un **README** da consultare per avviare l'app
 
 <br/> <!-- Questo inserisce uno spazio vuoto --><br/> <!-- Questo inserisce uno spazio vuoto -->
 
